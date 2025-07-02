@@ -1,77 +1,111 @@
 #include <stdio.h>
 
 #define TAM 10
+#define HABILIDADE 5
 #define NAVIO 3
+#define AREA_AFETADA 5
 
-// Função para verificar se posição está livre
-int podePosicionar(int tabuleiro[TAM][TAM], int linha[], int coluna[]) {
-    for (int i = 0; i < NAVIO; i++) {
-        if (linha[i] < 0 || linha[i] >= TAM || coluna[i] < 0 || coluna[i] >= TAM)
-            return 0; // fora dos limites
-        if (tabuleiro[linha[i]][coluna[i]] != 0)
-            return 0; // já ocupado
-    }
-    return 1;
-}
-
-// Função para posicionar o navio no tabuleiro
-void posicionarNavio(int tabuleiro[TAM][TAM], int linha[], int coluna[]) {
-    for (int i = 0; i < NAVIO; i++) {
-        tabuleiro[linha[i]][coluna[i]] = 3;
-    }
-}
-
-// Função para exibir o tabuleiro
+// Função para exibir o tabuleiro com caracteres específicos
 void exibirTabuleiro(int tabuleiro[TAM][TAM]) {
-    printf("\n=== TABULEIRO BATALHA NAVAL ===\n\n");
+    printf("\n=== TABULEIRO COM HABILIDADES ===\n\n");
     for (int i = 0; i < TAM; i++) {
         for (int j = 0; j < TAM; j++) {
-            printf("%d ", tabuleiro[i][j]);
+            if (tabuleiro[i][j] == 0) {
+                printf(". "); // Água
+            } else if (tabuleiro[i][j] == NAVIO) {
+                printf("N "); // Navio
+            } else if (tabuleiro[i][j] == AREA_AFETADA) {
+                printf("* "); // Área afetada
+            } else {
+                printf("? "); // Valor desconhecido
+            }
         }
         printf("\n");
     }
 }
 
+// Função genérica para aplicar uma matriz de habilidade no tabuleiro
+void aplicarHabilidade(int tabuleiro[TAM][TAM], int habilidade[HABILIDADE][HABILIDADE], int origem_linha, int origem_coluna) {
+    for (int i = 0; i < HABILIDADE; i++) {
+        for (int j = 0; j < HABILIDADE; j++) {
+            // Calcula a posição no tabuleiro
+            int linha_tab = origem_linha - HABILIDADE/2 + i;
+            int col_tab = origem_coluna - HABILIDADE/2 + j;
+
+            // Aplica se estiver dentro dos limites e se for área afetada
+            if (linha_tab >= 0 && linha_tab < TAM && col_tab >= 0 && col_tab < TAM) {
+                if (habilidade[i][j] == 1 && tabuleiro[linha_tab][col_tab] == 0) {
+                    tabuleiro[linha_tab][col_tab] = AREA_AFETADA;
+                }
+            }
+        }
+    }
+}
+
+// Gera matriz em forma de cone (expande para baixo)
+void gerarCone(int matriz[HABILIDADE][HABILIDADE]) {
+    for (int i = 0; i < HABILIDADE; i++) {
+        for (int j = 0; j < HABILIDADE; j++) {
+            matriz[i][j] = 0;
+        }
+    }
+    for (int i = 0; i < HABILIDADE; i++) {
+        for (int j = 0; j < HABILIDADE; j++) {
+            if (j >= HABILIDADE/2 - i && j <= HABILIDADE/2 + i) {
+                matriz[i][j] = 1;
+            }
+        }
+    }
+}
+
+// Gera matriz em forma de cruz
+void gerarCruz(int matriz[HABILIDADE][HABILIDADE]) {
+    for (int i = 0; i < HABILIDADE; i++) {
+        for (int j = 0; j < HABILIDADE; j++) {
+            matriz[i][j] = (i == HABILIDADE/2 || j == HABILIDADE/2) ? 1 : 0;
+        }
+    }
+}
+
+// Gera matriz em forma de octaedro (losango)
+void gerarOctaedro(int matriz[HABILIDADE][HABILIDADE]) {
+    for (int i = 0; i < HABILIDADE; i++) {
+        for (int j = 0; j < HABILIDADE; j++) {
+            matriz[i][j] = (abs(i - HABILIDADE/2) + abs(j - HABILIDADE/2) <= HABILIDADE/2) ? 1 : 0;
+        }
+    }
+}
+
 int main() {
-    // Tabuleiro 10x10 inicializado com 0 (água)
     int tabuleiro[TAM][TAM] = {0};
 
-    // --- NAVIO 1: horizontal em (2,2) a (2,4)
-    int navio1_linha[] = {2, 2, 2};
-    int navio1_coluna[] = {2, 3, 4};
+    // Posicionar alguns navios fixos (horizontal e vertical)
+    tabuleiro[2][2] = NAVIO;
+    tabuleiro[2][3] = NAVIO;
+    tabuleiro[2][4] = NAVIO;
 
-    // --- NAVIO 2: vertical em (5,6) a (7,6)
-    int navio2_linha[] = {5, 6, 7};
-    int navio2_coluna[] = {6, 6, 6};
+    tabuleiro[5][6] = NAVIO;
+    tabuleiro[6][6] = NAVIO;
+    tabuleiro[7][6] = NAVIO;
 
-    // --- NAVIO 3: diagonal ↘ em (0,0) a (2,2)
-    int navio3_linha[] = {0, 1, 2};
-    int navio3_coluna[] = {0, 1, 2};
+    // Matrizes para habilidades
+    int cone[HABILIDADE][HABILIDADE];
+    int cruz[HABILIDADE][HABILIDADE];
+    int octaedro[HABILIDADE][HABILIDADE];
 
-    // --- NAVIO 4: diagonal ↙ em (0,9) a (2,7)
-    int navio4_linha[] = {0, 1, 2};
-    int navio4_coluna[] = {9, 8, 7};
+    gerarCone(cone);
+    gerarCruz(cruz);
+    gerarOctaedro(octaedro);
 
-    // Validar e posicionar os navios
-    if (!podePosicionar(tabuleiro, navio1_linha, navio1_coluna)) {
-        printf("Erro ao posicionar navio 1.\n"); return 1;
-    }
-    posicionarNavio(tabuleiro, navio1_linha, navio1_coluna);
+    // Pontos de origem das habilidades no tabuleiro
+    int origemCone[2] = {1, 4};       // Cone para baixo a partir do topo
+    int origemCruz[2] = {6, 3};       // Cruz no meio
+    int origemOctaedro[2] = {8, 8};   // Octaedro no canto inferior direito
 
-    if (!podePosicionar(tabuleiro, navio2_linha, navio2_coluna)) {
-        printf("Erro ao posicionar navio 2.\n"); return 1;
-    }
-    posicionarNavio(tabuleiro, navio2_linha, navio2_coluna);
-
-    if (!podePosicionar(tabuleiro, navio3_linha, navio3_coluna)) {
-        printf("Erro ao posicionar navio 3.\n"); return 1;
-    }
-    posicionarNavio(tabuleiro, navio3_linha, navio3_coluna);
-
-    if (!podePosicionar(tabuleiro, navio4_linha, navio4_coluna)) {
-        printf("Erro ao posicionar navio 4.\n"); return 1;
-    }
-    posicionarNavio(tabuleiro, navio4_linha, navio4_coluna);
+    // Aplicar habilidades ao tabuleiro
+    aplicarHabilidade(tabuleiro, cone, origemCone[0], origemCone[1]);
+    aplicarHabilidade(tabuleiro, cruz, origemCruz[0], origemCruz[1]);
+    aplicarHabilidade(tabuleiro, octaedro, origemOctaedro[0], origemOctaedro[1]);
 
     // Exibir o tabuleiro final
     exibirTabuleiro(tabuleiro);
